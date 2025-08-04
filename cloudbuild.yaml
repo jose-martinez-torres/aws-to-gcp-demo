@@ -1,0 +1,56 @@
+# This cloudbuild.yaml file defines the CI/CD pipeline for deploying the GCP infrastructure using Terraform.
+# It is the Google Cloud equivalent of the AWS CodeBuild buildspec.yml file.
+
+steps:
+  # Step 1: Initialize Terraform with the GCS backend.
+  # This step initializes the backend, downloading the necessary provider plugins
+  # and configuring the remote state storage in the specified GCS bucket.
+  # For this to work, you should have a backend.tf file in your root directory declaring the "gcs" backend.
+  - name: 'hashicorp/terraform:1.8.2'
+    entrypoint: 'terraform'
+    args:
+      - 'init'
+      - '-backend-config=bucket=${_TERRAFORM_STATE_BUCKET}'
+      - '-backend-config=prefix=terraform/state' # A good practice to keep state organized within the bucket.
+
+  # Step 2: Validate the Terraform configuration.
+  # This step checks for syntax errors and ensures the configuration is internally consistent.
+  - name: 'hashicorp/terraform:1.8.2'
+    entrypoint: 'terraform'
+    args: ['validate']
+
+  # Step 3: Create a Terraform execution plan.
+  # This step generates a plan of the changes Terraform will make to the infrastructure.
+  # The plan is saved to a file (tfplan) to ensure that what is applied is exactly what was planned.
+  # We pass variables using -var flags for security and clarity, overriding any defaults.
+  - name: 'hashicorp/terraform:1.8.2'
+    entrypoint: 'terraform'
+    args:
+      - 'plan'
+      - '-out=tfplan'
+      - '-var=gcp_project_id=${PROJECT_ID}' # PROJECT_ID is a built-in substitution
+      - '-var=gcp_region=${_GCP_REGION}'
+
+  # Step 4: Apply the Terraform plan.
+  # This step executes the plan created in the previous step, provisioning or modifying the infrastructure.
+  # The -auto-approve flag is used because we are applying a pre-approved plan file.
+  - name: 'hashicorp/terraform:1.8.2'
+    entrypoint: 'terraform'
+    args: ['apply', '-auto-approve', 'tfplan']
+
+# Define user-specified substitutions. These can be overridden when running the build.
+substitutions:
+  _TERRAFORM_STATE_BUCKET: 'iac-accel-tfstate'
+  _CLOUDBUILD_ARTIFACTS_BUCKET: 'iac-accel-tfartifacts'
+  _GCP_REGION: 'us-east1' # Default region, can be overridden.
+
+# Configure build artifacts. The generated Terraform plan will be stored in the specified GCS bucket.
+artifacts:
+  objects:
+    location: 'gs://${_CLOUDBUILD_ARTIFACTS_BUCKET}/artifacts'
+    paths: ['tfplan']
+
+# Configure build options.
+options:
+  # This setting directs all build logs to Google Cloud Logging for centralized monitoring.
+  logging: CLOUD_LOGGING_ONLY
