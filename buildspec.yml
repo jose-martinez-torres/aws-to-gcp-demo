@@ -1,0 +1,46 @@
+version: 0.2
+
+# This buildspec file defines the CI/CD pipeline for deploying the AWS infrastructure using Terraform.
+# It is used by AWS CodeBuild. The equivalent in Google Cloud is a `cloudbuild.yaml` file.
+
+phases:
+  install:
+    runtime-versions:
+      # You can specify runtime versions for languages like python, node, etc.
+      # We will install Terraform manually for precise version control.
+      python: 3.11
+    commands:
+      # Pinning the Terraform version ensures consistent builds.
+      - "TF_VERSION=1.8.2"
+      - "wget https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip"
+      - "unzip terraform_${TF_VERSION}_linux_amd64.zip"
+      - "mv terraform /usr/local/bin/"
+
+  pre_build:
+    commands:
+      - "echo Initializing Terraform"
+      # Downloads the required providers (e.g., the AWS provider).
+      - "terraform init"
+
+  build:
+    commands:
+      - "echo Validating Terraform configuration"
+      - "terraform validate"
+      - "echo Running Terraform plan"
+      # The AWS region and unique_suffix are passed via defaults in variables.tf.
+      # The GCP variables are not used by this AWS-specific pipeline.
+      # AWS credentials are automatically provided by the CodeBuild execution role.
+      - "terraform plan -out=tfplan -var-file=variables.tf"
+      - "echo Applying Terraform plan"
+      - "terraform apply -auto-approve tfplan" # Applies the exact plan generated above.
+
+  post_build:
+    commands:
+      - "echo Build completed on `date`"
+
+# This is equivalent to the artifacts section in cloudbuild.yaml
+artifacts:
+  files:
+    - 'tfplan'
+  # You can optionally discard paths if you only want the plan artifact
+  discard-paths: yes
