@@ -72,6 +72,14 @@ resource "google_bigquery_table_iam_member" "pubsub_bq_writer" {
   member     = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-pubsub.iam.gserviceaccount.com"
 }
 
+# Introduce a delay to allow IAM permissions to propagate before creating the subscription.
+# This helps prevent race conditions where the subscription is created before GCP
+# recognizes that the Pub/Sub service account has write access to the BigQuery table.
+resource "time_sleep" "wait_for_iam_propagation" {
+  create_duration = "30s"
+  depends_on      = [google_bigquery_table_iam_member.pubsub_bq_writer]
+}
+
 # Resource: Pub/Sub to BigQuery Push Subscription
 # This subscription directly pushes messages from the topic to the BigQuery table.
 resource "google_pubsub_subscription" "bigquery_push_subscription" {
@@ -88,5 +96,5 @@ resource "google_pubsub_subscription" "bigquery_push_subscription" {
   }
 
   # Explicitly depend on the IAM binding to ensure permissions are set before the subscription is created.
-  depends_on = [google_bigquery_table_iam_member.pubsub_bq_writer]
+  depends_on = [time_sleep.wait_for_iam_propagation]
 }
