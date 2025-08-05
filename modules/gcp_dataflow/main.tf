@@ -29,6 +29,13 @@ resource "google_storage_bucket_iam_member" "dataflow_storage_binding" {
   member = "serviceAccount:${google_service_account.dataflow_sa.email}"
 }
 
+# Allows the SA to act as a Dataflow worker, managing its own compute resources.
+resource "google_project_iam_member" "dataflow_worker_binding" {
+  project = var.gcp_project_id
+  role    = "roles/dataflow.worker"
+  member  = "serviceAccount:${google_service_account.dataflow_sa.email}"
+}
+
 
 # --- Dataflow Job ---
 # This is the core pipeline resource, using a Google-provided template to stream
