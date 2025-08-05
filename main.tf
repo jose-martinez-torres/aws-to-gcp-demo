@@ -79,7 +79,7 @@ resource "google_bigquery_table" "json_external_table" {
 
   external_data_configuration {
     # The Dataflow template writes newline-delimited JSON (JSONL).
-    source_format = "JSON"
+    source_format = "NEWLINE_DELIMITED_JSON"
     # The source URI uses a wildcard that matches the prefix set in the Dataflow job.
     # This prevents the external table from trying to read the .placeholder object.
     source_uris   = ["${module.gcp_data_lake.gcs_bucket_path}/data-json/event-data-*"]
