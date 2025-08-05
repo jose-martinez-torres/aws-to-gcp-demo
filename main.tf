@@ -41,62 +41,41 @@ module "gcp_pubsub_topic" {
   labels        = var.resource_labels
 }
 
-# Module 3: Dataflow Parquet Pipeline (The GCP equivalent of Kinesis Firehose)
-# This module creates the data pipeline that connects the source to the destination,
-# landing the raw JSON data from Pub/Sub into Cloud Storage.
-module "gcp_dataflow" {
-  source = "./modules/gcp_dataflow"
-
-  # Use root variables and module outputs instead of hardcoding values.
-  unique_suffix        = var.unique_suffix
-  gcp_project_id       = var.gcp_project_id
-  gcp_region           = var.gcp_region
-  pubsub_topic_name    = module.gcp_pubsub_topic.topic_id
-  gcs_output_directory = "${module.gcp_data_lake.gcs_bucket_path}/data-json/"
-  gcs_temp_location    = "${module.gcp_data_lake.gcs_bucket_path}/temp/"
-  gcs_data_bucket_name = module.gcp_data_lake.gcs_bucket_name
-  labels               = var.resource_labels
-
-  # This is where you put the email address
-  dataflow_service_account_email = "1051082499499-compute@developer.gserviceaccount.com"
-}
-
-# Resource: GCS Placeholder for Dataflow Output
-# This resource creates an empty placeholder object in the GCS output directory.
-# This ensures that the "directory" exists before the BigQuery external table attempts to reference it,
-# preventing a potential race condition during `terraform apply`.
-resource "google_storage_bucket_object" "json_dir_placeholder" {
-  name    = "data-json/.placeholder"
-  bucket  = module.gcp_data_lake.gcs_bucket_name
-  content = "Placeholder to ensure directory existence for BigQuery external table."
-}
-
-# Resource: BigQuery External Table (The Query Layer)
-# This resource is defined in the root module because it connects the storage
-# layer (from gcp_data_lake) with the data format produced by the dataflow pipeline.
-resource "google_bigquery_table" "json_external_table" {
+# Resource: BigQuery Native Table (The Destination)
+# This is a native BigQuery table that will store the data pushed from Pub/Sub.
+resource "google_bigquery_table" "json_native_table" {
   project    = var.gcp_project_id
   dataset_id = module.gcp_data_lake.bigquery_dataset_id
   # BigQuery Table IDs cannot contain hyphens. We replace them with underscores
   # to ensure compatibility, as hyphens are common in resource naming.
   table_id   = "events_json_${replace(var.unique_suffix, "-", "_")}"
+  labels     = var.resource_labels
 
   # Disable deletion protection, allowing Terraform to manage the table's lifecycle.
   deletion_protection = false
 
-  external_data_configuration {
-    # The Dataflow template writes newline-delimited JSON (JSONL).
-    source_format = "NEWLINE_DELIMITED_JSON"
-    # The source URI uses a wildcard that matches the prefix set in the Dataflow job.
-    # This prevents the external table from trying to read the .placeholder object.
-    source_uris   = ["${module.gcp_data_lake.gcs_bucket_path}/data-json/event-data-*"]
-    autodetect    = false
-    # Use an explicit schema for production-grade reliability.
-    schema = file("${path.module}/bigquery_schema.json")
+  # Use an explicit schema for production-grade reliability.
+  schema = file("${path.module}/bigquery_schema.json")
+}
+
+# Resource: Pub/Sub to BigQuery Push Subscription
+# This subscription directly pushes messages from the topic to the BigQuery table.
+resource "google_pubsub_subscription" "bigquery_push_subscription" {
+  name  = "bq-push-subscription-${var.unique_suffix}"
+  topic = module.gcp_pubsub_topic.topic_name
+
+  push_config {
+    # An empty push_endpoint indicates a push subscription to a GCP service.
+    push_endpoint = ""
+
   }
 
-  labels = var.resource_labels
-
-  # Explicitly depend on the placeholder object to ensure the directory exists.
-  depends_on = [google_storage_bucket_object.json_dir_placeholder]
+  bigquery_config {
+    table = google_bigquery_table.json_native_table.id
+    # If true, the subscription will write the message data as a string in a single `data` column.
+    # If false, it will parse the JSON payload and map it to the table columns.
+    use_topic_schema = false
+    # If true, fields in the message that are not in the table schema will be dropped.
+    drop_unknown_fields = true
+  }
 }

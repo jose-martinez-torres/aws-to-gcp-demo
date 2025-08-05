@@ -42,3 +42,13 @@ variable "dataflow_service_account_email" {
   description = "The email of the pre-existing service account for the Dataflow job."
   type        = string
 }
+
+variable "network_name" {
+  description = "The name of the VPC network for Dataflow workers."
+  type        = string
+}
+
+variable "subnetwork_name" {
+  description = "The name of the VPC subnetwork for Dataflow workers. Should be in the same region as the Dataflow job."
+  type        = string
+}

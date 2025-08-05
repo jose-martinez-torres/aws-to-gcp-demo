@@ -23,3 +23,13 @@ variable "resource_labels" {
     "environment" = "demo"
   }
 }
+
+variable "vpc_network_name" {
+  description = "The name of the VPC network to use for Dataflow and other resources."
+  type        = string
+}
+
+variable "vpc_subnetwork_name" {
+  description = "The name of the VPC subnetwork to use for Dataflow and other resources."
+  type        = string
+}

@@ -43,6 +43,8 @@ resource "google_dataflow_job" "pubsub_to_gcs_text" {
     inputTopic           = var.pubsub_topic_name
     outputDirectory      = var.gcs_output_directory
     outputFilenamePrefix = "event-data-" # The prefix for output files.
+    network              = var.network_name
+    subnetwork           = var.subnetwork_name
   }
 
   # Setting this allows Terraform to manage the job without trying to stop it on every plan.
