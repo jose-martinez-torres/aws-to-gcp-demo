@@ -25,7 +25,9 @@ resource "google_pubsub_topic_iam_member" "dataflow_sub_binding" {
 # Allows the Dataflow SA to write data files and temp files to the GCS bucket.
 resource "google_storage_bucket_iam_member" "dataflow_storage_binding" {
   bucket = var.gcs_data_bucket_name # The bucket is used for output, temp, and schema
-  role   = "roles/storage.objectAdmin"
+  # roles/storage.objectUser is a more constrained role than objectAdmin.
+  # It allows creating, reading, and deleting objects, which is sufficient for Dataflow.
+  role   = "roles/storage.objectUser"
   member = "serviceAccount:${google_service_account.dataflow_sa.email}"
 }
 
