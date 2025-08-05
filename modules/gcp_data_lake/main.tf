@@ -54,7 +54,9 @@ resource "google_storage_bucket" "data_lake" {
 # Creates a BigQuery Dataset, which acts as a logical container for tables.
 # This is the direct equivalent of the aws_glue_catalog_database.
 resource "google_bigquery_dataset" "events_db" {
-  dataset_id = "gcp_events_database_${var.unique_suffix}"
+  # BigQuery Dataset IDs cannot contain hyphens. We replace them with underscores
+  # to ensure compatibility, as hyphens are common in resource naming.
+  dataset_id = "gcp_events_database_${replace(var.unique_suffix, "-", "_")}"
   labels     = var.labels
   location   = var.gcp_location # For external tables, the dataset location must match the GCS bucket location.
 }
