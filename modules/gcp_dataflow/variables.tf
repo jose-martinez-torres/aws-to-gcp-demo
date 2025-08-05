@@ -33,12 +33,6 @@ variable "gcs_data_bucket_name" {
   type        = string
 }
 
-variable "dataflow_window_duration" {
-  description = "The window duration for the Dataflow job (e.g., 5m, 10s). Determines how often files are written."
-  type        = string
-  default     = "5m"
-}
-
 variable "labels" {
   description = "A map of labels to apply to the Dataflow job."
   type        = map(string)

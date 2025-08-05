@@ -77,6 +77,9 @@ resource "google_bigquery_table" "json_external_table" {
   # to ensure compatibility, as hyphens are common in resource naming.
   table_id   = "events_json_${replace(var.unique_suffix, "-", "_")}"
 
+  # Disable deletion protection, allowing Terraform to manage the table's lifecycle.
+  deletion_protection = false
+
   external_data_configuration {
     # The Dataflow template writes newline-delimited JSON (JSONL).
     source_format = "NEWLINE_DELIMITED_JSON"
