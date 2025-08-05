@@ -43,18 +43,22 @@ module "gcp_pubsub_topic" {
 
 # Module 3: Dataflow Parquet Pipeline (The GCP equivalent of Kinesis Firehose)
 # This module creates the data pipeline that connects the source to the destination,
-# performing a JSON-to-Parquet conversion, similar to the original AWS Firehose stream.
+# landing the raw JSON data from Pub/Sub into Cloud Storage.
 module "gcp_dataflow" {
   source = "./modules/gcp_dataflow"
 
-  unique_suffix          = var.unique_suffix
-  gcp_region             = var.gcp_region
-  gcp_project_id         = var.gcp_project_id
-  pubsub_topic_name      = module.gcp_pubsub_topic.topic_id
-  gcs_output_directory   = "${module.gcp_data_lake.gcs_bucket_path}/data-json"
-  gcs_temp_location      = "${module.gcp_data_lake.gcs_bucket_path}/temp"
-  gcs_data_bucket_name   = module.gcp_data_lake.gcs_bucket_name
-  labels                 = var.resource_labels
+  # Use root variables and module outputs instead of hardcoding values.
+  unique_suffix        = var.unique_suffix
+  gcp_project_id       = var.gcp_project_id
+  gcp_region           = var.gcp_region
+  pubsub_topic_name    = module.gcp_pubsub_topic.topic_id
+  gcs_output_directory = "${module.gcp_data_lake.gcs_bucket_path}/data-json/"
+  gcs_temp_location    = "${module.gcp_data_lake.gcs_bucket_path}/temp/"
+  gcs_data_bucket_name = module.gcp_data_lake.gcs_bucket_name
+  labels               = var.resource_labels
+
+  # This is where you put the email address
+  dataflow_service_account_email = "1051082499499-compute@developer.gserviceaccount.com"
 }
 
 # Resource: GCS Placeholder for Dataflow Output

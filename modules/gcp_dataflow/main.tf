@@ -2,24 +2,19 @@
 # It is the GCP equivalent of the aws_kinesis_firehose_delivery_stream module.
 # It creates:
 # 1. A Service Account for the Dataflow job to use.
-# 2. IAM bindings to grant the Service Account necessary permissions.
-# 3. A GCS object for the Parquet schema definition.
-# 4. The Dataflow job itself, which reads from Pub/Sub, converts JSON to Parquet,
-#    and writes to a GCS data lake bucket.
+# 2. IAM bindings to grant the pre-existing Service Account necessary permissions.
+# 3. The Dataflow job itself, which reads from Pub/Sub and writes raw JSON messages
+#    to a GCS data lake bucket.
 
 # --- IAM Permissions for Dataflow ---
 # Creates the identity and permissions that the Dataflow service will use.
-# This is the direct equivalent of the aws_iam_role for Firehose.
-resource "google_service_account" "dataflow_sa" {
-  account_id   = "df-parquet-pipe-sa-${var.unique_suffix}"
-  display_name = "Dataflow Parquet Pipeline Service Account"
-}
+# The service account is now expected to be created outside of this module.
 
 # Allows the Dataflow SA to consume messages from the Pub/Sub topic.
 resource "google_pubsub_topic_iam_member" "dataflow_sub_binding" {
   topic   = var.pubsub_topic_name
   role    = "roles/pubsub.subscriber"
-  member  = "serviceAccount:${google_service_account.dataflow_sa.email}"
+  member  = "serviceAccount:${var.dataflow_service_account_email}"
 }
 
 # Allows the Dataflow SA to write data files and temp files to the GCS bucket.
@@ -28,7 +23,7 @@ resource "google_storage_bucket_iam_member" "dataflow_storage_binding" {
   # roles/storage.objectUser is a more constrained role than objectAdmin.
   # It allows creating, reading, and deleting objects, which is sufficient for Dataflow.
   role   = "roles/storage.objectUser"
-  member = "serviceAccount:${google_service_account.dataflow_sa.email}"
+  member = "serviceAccount:${var.dataflow_service_account_email}"
 }
 
 
@@ -42,7 +37,7 @@ resource "google_dataflow_job" "pubsub_to_gcs_text" {
   # It's more flexible than the Parquet-specific template as it lands the raw data.
   template_gcs_path     = "gs://dataflow-templates-${var.gcp_region}/latest/Cloud_PubSub_to_GCS_Text"
   temp_gcs_location     = var.gcs_temp_location
-  service_account_email = google_service_account.dataflow_sa.email
+  service_account_email = var.dataflow_service_account_email
   labels                = var.labels
 
   parameters = {

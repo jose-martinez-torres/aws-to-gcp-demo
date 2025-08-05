@@ -19,7 +19,7 @@ variable "pubsub_topic_name" {
 }
 
 variable "gcs_output_directory" {
-  description = "The GCS path for the output Parquet files (e.g., gs://bucket/path)."
+  description = "The GCS path for the output files (e.g., gs://bucket/path)."
   type        = string
 }
 
@@ -36,4 +36,9 @@ variable "gcs_data_bucket_name" {
 variable "labels" {
   description = "A map of labels to apply to the Dataflow job."
   type        = map(string)
+}
+
+variable "dataflow_service_account_email" {
+  description = "The email of the pre-existing service account for the Dataflow job."
+  type        = string
 }
