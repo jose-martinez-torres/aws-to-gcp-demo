@@ -29,26 +29,24 @@ resource "google_storage_bucket_iam_member" "dataflow_storage_binding" {
   member = "serviceAccount:${google_service_account.dataflow_sa.email}"
 }
 
-
-# --- Parquet Schema Definition ---
-# Uploads the Avro schema file to GCS. The Dataflow job will use this
-# to structure the output Parquet files. This replaces the need for an
-# AWS Glue table for schema definition during conversion.
-resource "google_storage_bucket_object" "schema_file" {
-  name    = "schemas/event_schema.json"
-  bucket  = var.gcs_data_bucket_name
-  content = var.schema_content
+# Allows the Dataflow service to manage Compute Engine VMs for the pipeline workers.
+# This binding is critical; without it, the job will fail to start its workers.
+# This is granted at the project level as Dataflow manages resources on behalf of the user.
+resource "google_project_iam_member" "dataflow_worker_binding" {
+  project = var.gcp_project_id
+  role    = "roles/dataflow.worker"
+  member  = "serviceAccount:${google_service_account.dataflow_sa.email}"
 }
 
 # --- Dataflow Job ---
-# This is the core pipeline resource, equivalent to aws_kinesis_firehose_delivery_stream.
-# It uses a Google-provided template to stream, convert, and deliver data.
-resource "google_dataflow_job" "pubsub_to_parquet" {
-  name                  = "gcp-pubsub-to-parquet-${var.unique_suffix}"
+# This is the core pipeline resource, using a Google-provided template to stream
+# raw text/JSON data from Pub/Sub to Cloud Storage.
+resource "google_dataflow_job" "pubsub_to_gcs_text" {
+  name                  = "gcp-pubsub-to-gcs-text-${var.unique_suffix}"
   region                = var.gcp_region
-  # Use the modern, region-specific path for Google-provided Dataflow templates.
-  # This improves reliability and ensures the template is available in the specified region.
-  template_gcs_path     = "gs://dataflow-templates-${var.gcp_region}/latest/Cloud_PubSub_to_Parquet"
+  # This is a standard, well-supported template for writing Pub/Sub messages to GCS.
+  # It's more flexible than the Parquet-specific template as it lands the raw data.
+  template_gcs_path     = "gs://dataflow-templates-${var.gcp_region}/latest/Cloud_PubSub_to_GCS_Text"
   temp_gcs_location     = var.gcs_temp_location
   service_account_email = google_service_account.dataflow_sa.email
   labels                = var.labels
@@ -56,8 +54,7 @@ resource "google_dataflow_job" "pubsub_to_parquet" {
   parameters = {
     inputTopic           = var.pubsub_topic_name
     outputDirectory      = var.gcs_output_directory
-    schemaPath           = "gs://${var.gcs_data_bucket_name}/${google_storage_bucket_object.schema_file.name}"
-    outputFilenamePrefix = "event-data-"
+    outputFilenamePrefix = "event-data-" # The prefix for output files.
     windowDuration       = var.dataflow_window_duration # Buffer data, similar to Firehose buffer hints.
   }
 

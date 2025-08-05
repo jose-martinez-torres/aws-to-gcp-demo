@@ -13,12 +13,12 @@ output "bigquery_dataset_id" {
   value       = module.gcp_data_lake.bigquery_dataset_id
 }
 
-output "bigquery_parquet_table_id" {
-  description = "The ID of the BigQuery table for querying the converted Parquet data."
-  value       = google_bigquery_table.parquet_external_table.table_id
+output "bigquery_json_table_id" {
+  description = "The ID of the BigQuery table for querying the raw JSON data."
+  value       = google_bigquery_table.json_external_table.table_id
 }
 
 output "bigquery_query_suggestion" {
   description = "A sample BigQuery query to run in the GCP console."
-  value       = "SELECT * FROM `${var.gcp_project_id}.${module.gcp_data_lake.bigquery_dataset_id}.${google_bigquery_table.parquet_external_table.table_id}` LIMIT 10"
+  value       = "SELECT * FROM `${var.gcp_project_id}.${module.gcp_data_lake.bigquery_dataset_id}.${google_bigquery_table.json_external_table.table_id}` LIMIT 10"
 }
