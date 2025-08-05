@@ -53,7 +53,8 @@ module "gcp_dataflow_parquet_pipeline" {
   gcs_output_directory   = "${module.gcp_data_lake.gcs_bucket_path}/data-parquet"
   gcs_temp_location      = "${module.gcp_data_lake.gcs_bucket_path}/temp"
   gcs_data_bucket_name   = module.gcp_data_lake.gcs_bucket_name
-  schema_content         = file("${path.module}/schemas/event_schema.json")
+  schema_content         = file("${path.module}/schema/event_schema.json")
+  labels                 = var.resource_labels
 }
 
 # Resource: BigQuery External Table (The Query Layer)

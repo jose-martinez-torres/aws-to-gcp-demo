@@ -55,6 +55,7 @@ resource "google_dataflow_job" "pubsub_to_parquet" {
   template_gcs_path     = "gs://dataflow-templates/latest/Cloud_PubSub_to_Parquet"
   temp_gcs_location     = var.gcs_temp_location
   service_account_email = google_service_account.dataflow_sa.email
+  labels                = var.labels
 
   parameters = {
     inputTopic           = var.pubsub_topic_name

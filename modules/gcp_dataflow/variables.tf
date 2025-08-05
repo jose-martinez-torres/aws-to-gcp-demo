@@ -43,3 +43,8 @@ variable "schema_content" {
   description = "The string content of the Avro schema file."
   type        = string
 }
+
+variable "labels" {
+  description = "A map of labels to apply to the Dataflow job."
+  type        = map(string)
+}
