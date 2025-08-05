@@ -62,13 +62,7 @@ resource "google_bigquery_table" "json_native_table" {
 # This subscription directly pushes messages from the topic to the BigQuery table.
 resource "google_pubsub_subscription" "bigquery_push_subscription" {
   name  = "bq-push-subscription-${var.unique_suffix}"
-  topic = module.gcp_pubsub_topic.topic_name
-
-  push_config {
-    # An empty push_endpoint indicates a push subscription to a GCP service.
-    push_endpoint = ""
-
-  }
+  topic = module.gcp_pubsub_topic.topic_id
 
   bigquery_config {
     table = google_bigquery_table.json_native_table.id
