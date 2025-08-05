@@ -10,16 +10,6 @@
 # Creates the identity and permissions that the Dataflow service will use.
 # The service account is now expected to be created outside of this module.
 
-# Data source to get the project number, needed for the Dataflow service agent principal.
-data "google_project" "project" {
-  project_id = var.gcp_project_id
-}
-
-# Data source to look up the full details of the pre-existing service account.
-data "google_service_account" "dataflow_sa" {
-  account_id = var.dataflow_service_account_email
-}
-
 # Allows the Dataflow SA to consume messages from the Pub/Sub topic.
 resource "google_pubsub_topic_iam_member" "dataflow_sub_binding" {
   topic   = var.pubsub_topic_name
@@ -35,15 +25,6 @@ resource "google_storage_bucket_iam_member" "dataflow_storage_binding" {
   role   = "roles/storage.objectUser"
   member = "serviceAccount:${var.dataflow_service_account_email}"
 }
-
-# Allows the Dataflow service agent to impersonate the custom service account.
-# This is a critical permission that allows the Dataflow service to launch the job with your SA's identity.
-resource "google_service_account_iam_member" "dataflow_service_agent_binding" {
-  service_account_id = data.google_service_account.dataflow_sa.name
-  role               = "roles/iam.serviceAccountUser"
-  member             = "serviceAccount:service-${data.google_project.project.number}@dataflow-service-producer-prod.iam.gserviceaccount.com"
-}
-
 
 # --- Dataflow Job ---
 # This is the core pipeline resource, using a Google-provided template to stream
