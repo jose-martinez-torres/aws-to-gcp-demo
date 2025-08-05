@@ -10,7 +10,7 @@
 # Creates the GCS bucket. This is the physical storage location for the data.
 # This is the direct equivalent of the aws_s3_bucket resource.
 resource "google_storage_bucket" "data_lake" {
-  name     = "gcp-datalake-bucket-${var.unique_suffix}"
+  name     = "gcp_datalake_bucket-${var.unique_suffix}"
   location = var.gcp_location # Can be a region like "us-east1" or multi-region like "US"
   labels   = var.labels
 

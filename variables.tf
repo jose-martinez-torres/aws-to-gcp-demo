@@ -12,7 +12,7 @@ variable "gcp_region" {
 variable "unique_suffix" {
   description = "A unique suffix to append to all resource names to ensure uniqueness."
   type        = string
-  default     = "gcp-iac"
+  default     = "gcp_iac"
 }
 
 variable "resource_labels" {
