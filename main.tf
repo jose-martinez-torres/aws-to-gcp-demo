@@ -58,6 +58,20 @@ resource "google_bigquery_table" "json_native_table" {
   schema = file("${path.module}/bigquery_schema.json")
 }
 
+# Data source to get the project number for constructing the Pub/Sub service account principal.
+data "google_project" "project" {}
+
+# Grant the Pub/Sub service account permissions to write to the BigQuery table.
+# This is often handled automatically by GCP, but creating it explicitly can resolve
+# race conditions and permission issues during initial creation.
+resource "google_bigquery_table_iam_member" "pubsub_bq_writer" {
+  project    = google_bigquery_table.json_native_table.project
+  dataset_id = google_bigquery_table.json_native_table.dataset_id
+  table_id   = google_bigquery_table.json_native_table.table_id
+  role       = "roles/bigquery.dataEditor"
+  member     = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-pubsub.iam.gserviceaccount.com"
+}
+
 # Resource: Pub/Sub to BigQuery Push Subscription
 # This subscription directly pushes messages from the topic to the BigQuery table.
 resource "google_pubsub_subscription" "bigquery_push_subscription" {
@@ -72,4 +86,7 @@ resource "google_pubsub_subscription" "bigquery_push_subscription" {
     # If true, fields in the message that are not in the table schema will be dropped.
     drop_unknown_fields = true
   }
+
+  # Explicitly depend on the IAM binding to ensure permissions are set before the subscription is created.
+  depends_on = [google_bigquery_table_iam_member.pubsub_bq_writer]
 }
