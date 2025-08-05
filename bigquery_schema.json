@@ -1,0 +1,17 @@
+[
+  {
+    "name": "eventid",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "eventtype",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
+    "name": "payload",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  }
+]
