@@ -29,12 +29,6 @@ resource "google_storage_bucket_iam_member" "dataflow_storage_binding" {
   member = "serviceAccount:${google_service_account.dataflow_sa.email}"
 }
 
-# Allows the SA to act as a Dataflow worker in the project.
-resource "google_project_iam_member" "dataflow_worker_binding" {
-  project = var.gcp_project_id
-  role    = "roles/dataflow.worker"
-  member  = "serviceAccount:${google_service_account.dataflow_sa.email}"
-}
 
 # --- Parquet Schema Definition ---
 # Uploads the Avro schema file to GCS. The Dataflow job will use this
@@ -52,7 +46,9 @@ resource "google_storage_bucket_object" "schema_file" {
 resource "google_dataflow_job" "pubsub_to_parquet" {
   name                  = "gcp-pubsub-to-parquet-${var.unique_suffix}"
   region                = var.gcp_region
-  template_gcs_path     = "gs://dataflow-templates/latest/Cloud_PubSub_to_Parquet"
+  # Use the modern, region-specific path for Google-provided Dataflow templates.
+  # This improves reliability and ensures the template is available in the specified region.
+  template_gcs_path     = "gs://dataflow-templates-${var.gcp_region}/latest/Cloud_PubSub_to_Parquet"
   temp_gcs_location     = var.gcs_temp_location
   service_account_email = google_service_account.dataflow_sa.email
   labels                = var.labels
