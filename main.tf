@@ -36,6 +36,7 @@ module "gcp_data_lake" {
 module "gcp_pubsub_topic" {
   source = "./modules/gcp_pubsub_topic"
 
+  gcp_project_id = var.gcp_project_id
   unique_suffix = var.unique_suffix
   labels        = var.resource_labels
 }
@@ -43,7 +44,7 @@ module "gcp_pubsub_topic" {
 # Module 3: Dataflow Parquet Pipeline (The GCP equivalent of Kinesis Firehose)
 # This module creates the data pipeline that connects the source to the destination,
 # performing a JSON-to-Parquet conversion, similar to the original AWS Firehose stream.
-module "gcp_dataflow_parquet_pipeline" {
+module "gcp_dataflow" {
   source = "./modules/gcp_dataflow"
 
   unique_suffix          = var.unique_suffix

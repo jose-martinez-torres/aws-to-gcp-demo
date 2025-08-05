@@ -1,16 +1,11 @@
-# This module creates a single Google Pub/Sub topic.
+# This module provisions the data ingestion endpoint for the GCP data pipeline.
+# It creates a Google Cloud Pub/Sub Topic that applications can publish messages to.
+# This is the GCP equivalent of the aws_sns_topic resource.
+# The "subscription" logic is handled by the consumer (e.g., the Dataflow job),
+# which is granted IAM permissions to read from this topic.
 
-variable "unique_suffix" {
-  description = "A unique suffix to append to the topic name."
-  type        = string
-}
-
-variable "labels" {
-  description = "A map of labels to apply to the topic."
-  type        = map(string)
-}
-
-resource "google_pubsub_topic" "topic" {
-  name   = "gcp-events-topic-${var.unique_suffix}"
-  labels = var.labels
+resource "google_pubsub_topic" "data_events" {
+  project = var.gcp_project_id
+  name    = "gcp-data-events-topic-${var.unique_suffix}"
+  labels  = var.labels
 }
