@@ -29,14 +29,6 @@ resource "google_storage_bucket_iam_member" "dataflow_storage_binding" {
   member = "serviceAccount:${google_service_account.dataflow_sa.email}"
 }
 
-# Allows the Dataflow service to manage Compute Engine VMs for the pipeline workers.
-# This binding is critical; without it, the job will fail to start its workers.
-# This is granted at the project level as Dataflow manages resources on behalf of the user.
-resource "google_project_iam_member" "dataflow_worker_binding" {
-  project = var.gcp_project_id
-  role    = "roles/dataflow.worker"
-  member  = "serviceAccount:${google_service_account.dataflow_sa.email}"
-}
 
 # --- Dataflow Job ---
 # This is the core pipeline resource, using a Google-provided template to stream
