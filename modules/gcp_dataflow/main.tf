@@ -24,7 +24,7 @@ resource "google_pubsub_topic_iam_member" "dataflow_sub_binding" {
 
 # Allows the Dataflow SA to write data files and temp files to the GCS bucket.
 resource "google_storage_bucket_iam_member" "dataflow_storage_binding" {
-  bucket = var.gcs_schema_bucket_name # The bucket is used for output, temp, and schema
+  bucket = var.gcs_data_bucket_name # The bucket is used for output, temp, and schema
   role   = "roles/storage.objectAdmin"
   member = "serviceAccount:${google_service_account.dataflow_sa.email}"
 }
@@ -42,7 +42,7 @@ resource "google_project_iam_member" "dataflow_worker_binding" {
 # AWS Glue table for schema definition during conversion.
 resource "google_storage_bucket_object" "schema_file" {
   name    = "schemas/event_schema.json"
-  bucket  = var.gcs_schema_bucket_name
+  bucket  = var.gcs_data_bucket_name
   content = var.schema_content
 }
 
@@ -59,7 +59,7 @@ resource "google_dataflow_job" "pubsub_to_parquet" {
   parameters = {
     inputTopic           = var.pubsub_topic_name
     outputDirectory      = var.gcs_output_directory
-    schemaPath           = "gs://${var.gcs_schema_bucket_name}/${google_storage_bucket_object.schema_file.name}"
+    schemaPath           = "gs://${var.gcs_data_bucket_name}/${google_storage_bucket_object.schema_file.name}"
     outputFilenamePrefix = "event-data-"
     windowDuration       = var.dataflow_window_duration # Buffer data, similar to Firehose buffer hints.
   }

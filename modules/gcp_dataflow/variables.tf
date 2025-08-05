@@ -28,8 +28,8 @@ variable "gcs_temp_location" {
   type        = string
 }
 
-variable "gcs_schema_bucket_name" {
-  description = "The name of the GCS bucket to upload the Parquet schema to."
+variable "gcs_data_bucket_name" {
+  description = "The name of the GCS bucket for output, temp files, and schema."
   type        = string
 }
 
