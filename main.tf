@@ -21,7 +21,7 @@ provider "google" {
 # Module 1: GCP Data Lake Foundation (The Destination)
 # This module creates the foundational components:
 # - A Google Cloud Storage (GCS) bucket for raw data storage.
-# - A BigQuery dataset and an external table to provide a schema over the GCS data.
+# - A BigQuery dataset to contain our tables.
 module "gcp_data_lake" {
   source = "./modules/gcp_data_lake"
   
