@@ -6,6 +6,12 @@ resource "google_pubsub_topic" "ingestion_topic" {
   name    = "user-events-topic-${var.unique_suffix}"
 }
 
+# Configure the google-beta provider
+provider "google-beta" {
+  project = var.project_id
+  region  = var.project_id
+}
+
 # --- 2. Grant Pub/Sub Service Account Permissions to write to GCS ---
 # Before creating the subscription, we must grant the Pub/Sub service account
 # the necessary permissions to write objects to the target GCS bucket.
@@ -13,7 +19,8 @@ resource "google_pubsub_topic" "ingestion_topic" {
 # First, get the special service account that Pub/Sub uses for this project.
 data "google_project_service_identity" "pubsub_sa" {
   project = var.project_id
-  service = "pubsub.googleapis.com"
+  provider = google-beta
+  service = "pubsub"
 }
 
 # Then, grant the "Storage Object Creator" role to that service account on the bucket.
