@@ -68,14 +68,24 @@ resource "google_bigquery_table" "json_native_table" {
 # Data source to get the project number for constructing the Pub/Sub service account principal.
 data "google_project" "project" {}
 
-# Grant the Pub/Sub service account permissions to write to the BigQuery table.
-# This is often handled automatically by GCP, but creating it explicitly can resolve
-# race conditions and permission issues during initial creation.
-resource "google_bigquery_table_iam_member" "pubsub_bq_writer" {
+# Grant the Pub/Sub service account the necessary permissions on the BigQuery table.
+# The service account needs two roles:
+# 1. `roles/bigquery.dataEditor`: To write data into the table.
+# 2. `roles/bigquery.metadataViewer`: To read the table's schema and metadata.
+# The metadataViewer role is crucial for the subscription creation to succeed.
+resource "google_bigquery_table_iam_member" "pubsub_bq_editor" {
   project    = google_bigquery_table.json_native_table.project
   dataset_id = google_bigquery_table.json_native_table.dataset_id
   table_id   = google_bigquery_table.json_native_table.table_id
   role       = "roles/bigquery.dataEditor"
+  member     = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-pubsub.iam.gserviceaccount.com"
+}
+
+resource "google_bigquery_table_iam_member" "pubsub_bq_viewer" {
+  project    = google_bigquery_table.json_native_table.project
+  dataset_id = google_bigquery_table.json_native_table.dataset_id
+  table_id   = google_bigquery_table.json_native_table.table_id
+  role       = "roles/bigquery.metadataViewer"
   member     = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-pubsub.iam.gserviceaccount.com"
 }
 
@@ -84,7 +94,10 @@ resource "google_bigquery_table_iam_member" "pubsub_bq_writer" {
 # recognizes that the Pub/Sub service account has write access to the BigQuery table.
 resource "time_sleep" "wait_for_iam_propagation" {
   create_duration = "30s"
-  depends_on      = [google_bigquery_table_iam_member.pubsub_bq_writer]
+  depends_on = [
+    google_bigquery_table_iam_member.pubsub_bq_editor,
+    google_bigquery_table_iam_member.pubsub_bq_viewer,
+  ]
 }
 
 # Resource: Pub/Sub to BigQuery Push Subscription
