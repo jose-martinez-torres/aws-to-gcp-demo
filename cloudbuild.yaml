@@ -45,7 +45,7 @@ substitutions:
   _TERRAFORM_STATE_BUCKET: 'iac-accel-tfstate'
   _CLOUDBUILD_ARTIFACTS_BUCKET: 'iac-accel-tfartifacts'
   _GCP_REGION: 'us-east1' # Default region, can be overridden.
-  _UNIQUE_SUFFIX: 'gcp-iac' # Default suffix, can be overridden.
+  _UNIQUE_SUFFIX: 'gcp_iac' # Default suffix, can be overridden.
   _ENVIRONMENT: 'demo' # Default environment label, can be overridden.
 
 # Configure build artifacts. The generated Terraform plan will be stored in the specified GCS bucket.
