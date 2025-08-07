@@ -18,6 +18,9 @@ resource "google_storage_bucket" "data_lake" {
   # This is analogous to the aws_s3_bucket_public_access_block resource.
   uniform_bucket_level_access = true
 
+  # Setting force_destroy to true is useful for ephemeral environments.
+  force_destroy = var.force_destroy_bucket
+
   # Enables versioning on the bucket to protect against accidental data deletion or overwrites.
   versioning {
     enabled = true

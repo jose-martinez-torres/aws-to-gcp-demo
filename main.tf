@@ -35,6 +35,9 @@ module "gcp_data_lake" {
   
   location      = var.region
   labels        = var.resource_labels
+  # For this demo environment, allow the bucket to be destroyed even if it contains objects.
+  # In a production environment, this should be set to false.
+  force_destroy_bucket = true
 }
 
 # Module 2: Pub/Sub Topic for Data Ingestion (The Source)
@@ -107,4 +110,11 @@ resource "google_pubsub_subscription" "bigquery_push_subscription" {
   topic = module.gcp_pubsub_topic.topic_id
   # Explicitly depend on the IAM binding to ensure permissions are set before the subscription is created.
   depends_on = [time_sleep.wait_for_iam_propagation]
+
+  # Configure the subscription to write directly to the BigQuery table.
+  bigquery_config {
+    table = google_bigquery_table.json_native_table.id
+    # When true, messages with fields that do not match the table schema are not written to the table.
+    drop_unknown_fields = true
+  }
 }
