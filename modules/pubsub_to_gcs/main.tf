@@ -14,9 +14,16 @@ data "google_project" "project" {
 
 # 3. Grant the Pub/Sub service account permission to write to the GCS bucket.
 # Without this, the subscription will fail to create.
-resource "google_storage_bucket_iam_member" "pubsub_writer" {
+# The service account needs both Object Creator and Legacy Bucket Reader roles.
+resource "google_storage_bucket_iam_member" "pubsub_object_creator" {
   bucket = var.gcs_bucket_name
   role   = "roles/storage.objectCreator"
+  member = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-pubsub.iam.gserviceaccount.com"
+}
+
+resource "google_storage_bucket_iam_member" "pubsub_bucket_reader" {
+  bucket = var.gcs_bucket_name
+  role   = "roles/storage.legacyBucketReader"
   member = "serviceAccount:service-${data.google_project.project.number}@gcp-sa-pubsub.iam.gserviceaccount.com"
 }
 
@@ -41,6 +48,7 @@ resource "google_pubsub_subscription" "gcs_subscription" {
 
   # Ensure the IAM permission is created before the subscription attempts to validate it.
   depends_on = [
-    google_storage_bucket_iam_member.pubsub_writer
+    google_storage_bucket_iam_member.pubsub_object_creator,
+    google_storage_bucket_iam_member.pubsub_bucket_reader
   ]
 }
