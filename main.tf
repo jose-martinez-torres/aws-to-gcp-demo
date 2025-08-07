@@ -1,20 +1,27 @@
-# This file is the main entrypoint for the Terraform configuration.
-# It defines the providers and orchestrates the creation of resources
-# by calling reusable modules.
 terraform {
+  required_version = ">= 1.0"
+
+  # Configure the GCS backend for storing Terraform state remotely.
+  # This is crucial for team collaboration and state locking.
+  backend "gcs" {
+    bucket = "iac-accel-tfstate"
+    prefix = "gcp-sample/terraform.tfstate"
+  }
+
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 5.25"
+      version = ">= 4.0" 
     }
   }
 }
 
-# Configure the Google Cloud provider.
+# Default Google Cloud provider configuration for the primary region.
 provider "google" {
-  project = var.gcp_project_id
-  region  = var.gcp_region
+  project = var.project_id
+  region  = var.region
 }
+
 
 # --- Module Definitions ---
 
@@ -24,9 +31,9 @@ provider "google" {
 # - A BigQuery dataset to contain our tables.
 module "gcp_data_lake" {
   source = "./modules/gcp_data_lake"
-  
   unique_suffix = var.unique_suffix
-  gcp_location  = var.gcp_region
+  
+  location      = var.region
   labels        = var.resource_labels
 }
 
@@ -36,7 +43,7 @@ module "gcp_data_lake" {
 module "gcp_pubsub_topic" {
   source = "./modules/gcp_pubsub_topic"
 
-  gcp_project_id = var.gcp_project_id
+  gcp_project_id = var.project_id
   unique_suffix = var.unique_suffix
   labels        = var.resource_labels
 }
@@ -44,7 +51,7 @@ module "gcp_pubsub_topic" {
 # Resource: BigQuery Native Table (The Destination)
 # This is a native BigQuery table that will store the data pushed from Pub/Sub.
 resource "google_bigquery_table" "json_native_table" {
-  project    = var.gcp_project_id
+  project    = var.project_id
   dataset_id = module.gcp_data_lake.bigquery_dataset_id
   # BigQuery Table IDs cannot contain hyphens. We replace them with underscores
   # to ensure compatibility, as hyphens are common in resource naming.

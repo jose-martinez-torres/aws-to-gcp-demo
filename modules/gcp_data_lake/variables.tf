@@ -3,7 +3,7 @@ variable "unique_suffix" {
   type        = string
 }
 
-variable "gcp_location" {
+variable "location" {
   description = "The GCP location (region or multi-region) for the GCS bucket and BigQuery dataset."
   type        = string
 }

@@ -20,5 +20,5 @@ output "bigquery_native_table_id" {
 
 output "bigquery_query_suggestion" {
   description = "A sample BigQuery query to run in the GCP console."
-  value       = "SELECT * FROM `${var.gcp_project_id}.${module.gcp_data_lake.bigquery_dataset_id}.${google_bigquery_table.json_native_table.table_id}` LIMIT 10"
+  value       = "SELECT * FROM `${var.project_id}.${module.gcp_data_lake.bigquery_dataset_id}.${google_bigquery_table.json_native_table.table_id}` LIMIT 10"
 }

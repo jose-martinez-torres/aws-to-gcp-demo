@@ -11,7 +11,7 @@
 # This is the direct equivalent of the aws_s3_bucket resource.
 resource "google_storage_bucket" "data_lake" {
   name     = "gcp_datalake_bucket_${var.unique_suffix}"
-  location = var.gcp_location # Can be a region like "us-east1" or multi-region like "US"
+  location = var.location # Can be a region like "us-east1" or multi-region like "US"
   labels   = var.labels
 
   # Enforces security best practices by preventing per-object ACLs.
@@ -58,5 +58,5 @@ resource "google_bigquery_dataset" "events_db" {
   # to ensure compatibility, as hyphens are common in resource naming.
   dataset_id = "gcp_events_database_${replace(var.unique_suffix, "-", "_")}"
   labels     = var.labels
-  location   = var.gcp_location # For external tables, the dataset location must match the GCS bucket location.
+  location   = var.location # For external tables, the dataset location must match the GCS bucket location.
 }
