@@ -98,8 +98,5 @@ resource "google_bigquery_table_iam_member" "pubsub_bq_viewer" {
 resource "google_pubsub_subscription" "bigquery_push_subscription" {
   name  = "bq-push-subscription-${var.unique_suffix}"
   topic = module.gcp_pubsub_topic.topic_id
-  # Explicitly depend on the IAM binding to ensure permissions are set before the subscription is created.
-  depends_on = [time_sleep.wait_for_iam_propagation]
-
  
 }
