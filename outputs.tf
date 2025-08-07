@@ -1,24 +1,24 @@
-output "sns_topic_arn" {
-  description = "The ARN of the SNS topic to publish messages to."
-  value       = module.sns_to_firehose.sns_topic_arn
+output "pubsub_topic_name" {
+  description = "The name of the Pub/Sub topic to publish messages to."
+  value       = module.pubsub_to_gcs.pubsub_topic_name
 }
 
-output "s3_bucket_name" {
-  description = "The name of the S3 bucket where data is stored."
-  value       = module.data_lake.s3_bucket_id
+output "gcs_bucket_name" {
+  description = "The name of the GCS bucket where data is stored."
+  value       = module.gcp_data_lake.gcs_bucket_name
 }
 
-output "glue_database_name" {
-  description = "The name of the AWS Glue Catalog database."
-  value       = module.data_lake.glue_database_name
+output "bigquery_dataset_id" {
+  description = "The ID of the BigQuery dataset."
+  value       = module.gcp_data_lake.bigquery_dataset_id
 }
 
-output "glue_table_name" {
-  description = "The name of the AWS Glue Catalog table."
-  value       = module.data_lake.glue_table_name
+output "bigquery_table_name" {
+  description = "The name of the BigQuery external table."
+  value       = module.gcp_data_lake.bigquery_table_id
 }
 
-output "athena_query_suggestion" {
-  description = "A sample Athena query to run in the AWS console."
-  value       = "SELECT * FROM \"${module.data_lake.glue_database_name}\".\"${module.data_lake.glue_table_name}\" limit 10;"
+output "bigquery_query_suggestion" {
+  description = "A sample BigQuery query to run in the GCP console."
+  value       = "SELECT * FROM `${module.gcp_data_lake.bigquery_table_full_id_for_query}` LIMIT 10"
 }
