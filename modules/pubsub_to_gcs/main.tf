@@ -17,7 +17,7 @@ provider "google-beta" {
 # the necessary permissions to write objects to the target GCS bucket.
 
 # First, get the special service account that Pub/Sub uses for this project.
-data "google_project_service_identity" "pubsub_sa" {
+resource "google_project_service_identity" "pubsub_sa" {
   project = var.project_id
   provider = google-beta
   service = "pubsub"
