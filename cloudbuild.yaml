@@ -1,0 +1,68 @@
+# This cloudbuild.yaml file defines the CI/CD pipeline for deploying the GCP infrastructure using Terraform.
+# It is the GCP equivalent of the buildspec.yml file.
+
+steps:
+  # Step 1: Initialize Terraform
+  # This step downloads the required providers and initializes the backend state in GCS.
+  # We use a specific version of the hashicorp/terraform image for consistent builds.
+  - name: 'hashicorp/terraform:1.8.2'
+    id: 'init'
+    entrypoint: 'terraform'
+    args:
+      - 'init'
+      - '-reconfigure' # Ensures backend is re-initialized if config changes
+
+  # Step 2: Validate the Terraform configuration
+  # Checks if the configuration is syntactically valid and internally consistent.
+  - name: 'hashicorp/terraform:1.8.2'
+    id: 'validate'
+    entrypoint: 'terraform'
+    args: ['validate']
+    waitFor: ['init']
+
+  # Step 3: Create a Terraform plan
+  # This step creates an execution plan and saves it as an artifact.
+  # We pass variables for the project ID, region, and a unique suffix for resource naming.
+  - name: 'hashicorp/terraform:1.8.2'
+    id: 'plan'
+    entrypoint: 'terraform'
+    args:
+      - 'plan'
+      - '-out=tfplan'
+      - '-var=gcp_project_id=${PROJECT_ID}'
+      - '-var=gcp_region=${_GCP_REGION}'
+      - '-var=unique_suffix=gcp-iac-${_ENV}'
+    waitFor: ['validate']
+
+  # Step 4: Apply the Terraform plan
+  # This step applies the changes defined in the 'tfplan' file.
+  # The -auto-approve flag is used for non-interactive execution in a CI/CD pipeline.
+  - name: 'hashicorp/terraform:1.8.2'
+    id: 'apply'
+    entrypoint: 'terraform'
+    args:
+      - 'apply'
+      - '-auto-approve'
+      - 'tfplan'
+    waitFor: ['plan']
+
+# Define the artifacts to be stored after the build completes.
+# We are storing the Terraform plan file for auditing and debugging purposes.
+artifacts:
+  objects:
+    location: 'gs://${_CLOUDBUILD_ARTIFACTS_BUCKET}/gcp_runbook'
+    paths: ['tfplan']
+
+# Define build-wide options.
+options:
+  # This ensures that build logs are sent to Google Cloud Logging.
+  logging: CLOUD_LOGGING_ONLY
+
+# Define user-specified substitution variables and their default values.
+# These can be overridden at build time.
+substitutions:
+  _GCP_REGION: 'us-central1'
+  _ENV: 'test'
+  _TERRAFORM_STATE_BUCKET: 'iac-accel-tfstate'
+  # Note: _CLOUDBUILD_ARTIFACTS_BUCKET must be provided when running the build/trigger.
+  _CLOUDBUILD_ARTIFACTS_BUCKET: 'iac-accel-tfartifacts'

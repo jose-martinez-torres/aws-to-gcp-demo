@@ -1,54 +1,50 @@
 # This file is the main entrypoint for the Terraform configuration.
 # It defines the providers and orchestrates the creation of resources
-# by calling reusable modules.
+# by calling reusable modules for the GCP equivalent pipeline.
 terraform {
   required_providers {
-    aws = {
-      source  = "hashicorp/aws"
+    google = {
+      source  = "hashicorp/google"
       version = "~> 5.0"
     }
   }
+
+  backend "gcs" {
+    bucket = "iac-accel-tfstate"
+    prefix = "gcp-sample/terraform.tfstate"
+  }
 }
 
-# Configure the AWS provider with the specified region.
-provider "aws" {
-  region = var.aws_region
+# Configure the Google Cloud provider with the specified project and region.
+provider "google" {
+  project = var.gcp_project_id
+  region  = var.gcp_region
 }
 
 # --- Module Definitions ---
 
-# Module 1: Data Lake Storage and Catalog
-# This module creates the foundational components:
-# - An S3 bucket to serve as the data lake storage.
-# - An AWS Glue Catalog database and table to define the schema for the data.
-module "data_lake" {
-  source = "./modules/data_lake"
+# Module 1: GCP Data Lake Storage and Catalog
+# This module creates the foundational components for the GCP data lake:
+# - A Google Cloud Storage (GCS) bucket to serve as the data lake storage.
+# - A BigQuery Dataset to organize tables.
+# - A BigQuery External Table to define the schema and query data directly from GCS.
+module "gcp_data_lake" {
+  source = "./modules/gcp_data_lake"
 
+  project_id = var.gcp_project_id
   unique_suffix = var.unique_suffix
+  location = var.gcp_region
 }
 
-# Module 2: Kinesis Firehose Delivery Stream
-# This module creates the data pipeline that ingests streaming data and delivers it to S3.
-# It uses the outputs from the `data_lake` module to know where to store the data and what schema to use.
-module "firehose_s3_delivery" {
-  source = "./modules/firehose_s3_delivery"
+# Module 2: Pub/Sub to GCS Ingestion Pipeline
+# This module creates the data pipeline that ingests streaming data and delivers it to GCS.
+# - A Pub/Sub topic where applications can publish data messages.
+# - A Pub/Sub subscription with a Cloud Storage "sink" that automatically writes
+#   messages from the topic to the GCS bucket created in the `gcp_data_lake` module.
+module "pubsub_to_gcs" {
+  source = "./modules/pubsub_to_gcs"
 
-  unique_suffix      = var.unique_suffix
-  aws_region         = var.aws_region
-  s3_bucket_arn      = module.data_lake.s3_bucket_arn
-  glue_database_name = module.data_lake.glue_database_name
-  glue_table_name    = module.data_lake.glue_table_name
-  glue_database_arn  = module.data_lake.glue_database_arn
-  glue_table_arn     = module.data_lake.glue_table_arn
-}
-
-# Module 3: SNS Topic for Data Ingestion
-# This module creates the entry point for the pipeline:
-# - An SNS topic where applications can publish data messages.
-# - A subscription that connects the SNS topic directly to the Kinesis Firehose stream.
-module "sns_to_firehose" {
-  source = "./modules/sns_to_firehose"
-
-  unique_suffix               = var.unique_suffix
-  kinesis_firehose_stream_arn = module.firehose_s3_delivery.kinesis_firehose_stream_arn
+  project_id      = var.gcp_project_id
+  unique_suffix   = var.unique_suffix
+  gcs_bucket_name = module.gcp_data_lake.gcs_bucket_name
 }
