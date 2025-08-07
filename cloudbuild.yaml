@@ -1,0 +1,65 @@
+# This cloudbuild.yaml file defines the CI/CD pipeline for deploying the GCP infrastructure using Terraform.
+# It is the Google Cloud equivalent of the AWS CodeBuild buildspec.yml file.
+
+substitutions:
+  _TF_VERSION: '1.8.2'
+  _DEFAULT_REGION: 'us-central1'
+  _ENV: 'test'
+  _TERRAFORM_STATE_BUCKET: 'iac-accel-tfstate'
+  _CLOUDBUILD_ARTIFACTS_BUCKET: 'iac-accel-tfartifacts'
+
+steps:
+  # 1. Initialize Terraform
+  # This step runs `terraform init` to download providers and configure the backend.
+  # The backend configuration is passed explicitly for CI/CD best practices, matching the main.tf configuration.
+  - name: 'hashicorp/terraform:${_TF_VERSION}'
+    id: 'Init'
+    entrypoint: 'terraform'
+    args:
+      - 'init'
+      - '-backend-config=bucket=${_TERRAFORM_STATE_BUCKET}'
+      - '-backend-config=prefix=gcp-sample/terraform.tfstate'
+
+  # 2. Validate Terraform Configuration
+  # This step ensures the Terraform code is syntactically valid.
+  - name: 'hashicorp/terraform:${_TF_VERSION}'
+    id: 'Validate'
+    entrypoint: 'terraform'
+    args: ['validate']
+    waitFor: ['Init'] # Wait for init to complete
+
+  # 3. Generate Terraform Plan
+  # This step creates an execution plan and saves it as an artifact.
+  # Variables are passed in using substitutions for dynamic configuration.
+  - name: 'hashicorp/terraform:${_TF_VERSION}'
+    id: 'Plan'
+    entrypoint: 'terraform'
+    args:
+      - 'plan'
+      - '-out=tfplan'
+      - '-var=gcp_project_id=${PROJECT_ID}' # PROJECT_ID is a built-in Cloud Build variable
+      - '-var=gcp_region=${_DEFAULT_REGION}'
+      - '-var=unique_suffix=gcp-iac-${_ENV}'
+    waitFor: ['Validate'] # Wait for validation to complete
+
+  # 4. Apply Terraform Plan
+  # This step applies the changes defined in the 'tfplan' file.
+  # The '-auto-approve' flag is used for non-interactive execution.
+  - name: 'hashicorp/terraform:${_TF_VERSION}'
+    id: 'Apply'
+    entrypoint: 'terraform'
+    args:
+      - 'apply'
+      - '-auto-approve'
+      - 'tfplan'
+    waitFor: ['Plan'] # Wait for the plan to be created
+
+# Store the Terraform plan file as a build artifact in a GCS bucket.
+artifacts:
+  objects:
+    location: 'gs://${_CLOUDBUILD_ARTIFACTS_BUCKET}/gcp_runbook'
+    paths: ['tfplan']
+
+# Define build-wide options to ensure logs are sent to Cloud Logging.
+options:
+  logging: CLOUD_LOGGING_ONLY

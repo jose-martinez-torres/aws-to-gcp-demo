@@ -1,24 +1,14 @@
-output "sns_topic_arn" {
-  description = "The ARN of the SNS topic to publish messages to."
-  value       = module.sns_to_firehose.sns_topic_arn
+output "pubsub_topic_id" {
+  description = "The ID of the Pub/Sub topic to publish messages to."
+  value       = module.pubsub_to_gcs_pipeline.topic_id
 }
 
-output "s3_bucket_name" {
-  description = "The name of the S3 bucket where data is stored."
-  value       = module.data_lake.s3_bucket_id
+output "gcs_bucket_name" {
+  description = "The name of the GCS bucket where data is stored."
+  value       = module.gcs_data_lake_bucket.bucket_name
 }
 
-output "glue_database_name" {
-  description = "The name of the AWS Glue Catalog database."
-  value       = module.data_lake.glue_database_name
-}
-
-output "glue_table_name" {
-  description = "The name of the AWS Glue Catalog table."
-  value       = module.data_lake.glue_table_name
-}
-
-output "athena_query_suggestion" {
-  description = "A sample Athena query to run in the AWS console."
-  value       = "SELECT * FROM \"${module.data_lake.glue_database_name}\".\"${module.data_lake.glue_table_name}\" limit 10;"
+output "gcloud_pubsub_publish_suggestion" {
+  description = "A sample gcloud command to publish a message to the topic."
+  value       = "gcloud pubsub topics publish ${module.pubsub_to_gcs_pipeline.topic_id} --message '{\"stock_ticker\": \"GOOG\", \"trade_type\": \"BUY\", \"quantity\": 100, \"trade_price\": 175.50}'"
 }
