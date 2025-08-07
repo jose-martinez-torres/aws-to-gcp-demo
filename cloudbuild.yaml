@@ -28,8 +28,8 @@ steps:
     args:
       - 'plan'
       - '-out=tfplan'
-      - '-var=gcp_project_id=${PROJECT_ID}' # PROJECT_ID is a built-in substitution
-      - '-var=gcp_region=${_GCP_REGION}'
+      - '-var=project_id=${PROJECT_ID}' # PROJECT_ID is a built-in substitution
+      - '-var=region=${_GCP_REGION}'
       - '-var=unique_suffix=${_UNIQUE_SUFFIX}'
       - '-var=resource_labels={"environment":"${_ENVIRONMENT}","managed-by":"terraform"}'
 
