@@ -105,16 +105,6 @@ resource "time_sleep" "wait_for_iam_propagation" {
 resource "google_pubsub_subscription" "bigquery_push_subscription" {
   name  = "bq-push-subscription-${var.unique_suffix}"
   topic = module.gcp_pubsub_topic.topic_id
-
-  bigquery_config {
-    table = google_bigquery_table.json_native_table.id
-    # If true, the subscription will write the message data as a string in a single `data` column.
-    # If false, it will parse the JSON payload and map it to the table columns.
-    use_topic_schema = false
-    # If true, fields in the message that are not in the table schema will be dropped.
-    drop_unknown_fields = true
-  }
-
   # Explicitly depend on the IAM binding to ensure permissions are set before the subscription is created.
   depends_on = [time_sleep.wait_for_iam_propagation]
 }
