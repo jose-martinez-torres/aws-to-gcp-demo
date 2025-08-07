@@ -17,5 +17,5 @@ variable "labels" {
 variable "force_destroy_bucket" {
   description = "A boolean to control whether the bucket can be destroyed even if it contains objects. Should be false in production."
   type        = bool
-  default     = false
+  default     = true
 }
